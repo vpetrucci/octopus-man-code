@@ -1,0 +1,2 @@
+sudo nohup start-stop-daemon -v --start --user elasticsearch -c elasticsearch --pidfile /var/run/elasticsearch.pid --exec /usr/share/elasticsearch/bin/elasticsearch -- -p /var/run/elasticsearch.pid -Des.default.config=/etc/elasticsearch/elasticsearch.yml -Des.default.path.home=/usr/share/elasticsearch -Des.default.path.logs=/var/log/elasticsearch -Des.default.path.data=/var/lib/elasticsearch -Des.default.path.work=/tmp/elasticsearch -Des.default.path.conf=/etc/elasticsearch &
+

@@ -1,0 +1,137 @@
+import os
+import subprocess
+import time
+import signal
+import sys
+
+BASE_PATH="/afs/cs.pitt.edu/usr0/vpetrucci/disk2"
+SPEC_PATH=BASE_PATH+"/cpu2006/benchspec/CPU2006/"
+RUN_PATH="/run/run_base_ref_amd64-m64-gcc42-nn.0000/"
+EXE_SUFIX="_base.amd64-m64-gcc42-nn"
+
+cmd_list = {'soplex': ('450.soplex/exe/soplex'+EXE_SUFIX +' -m3500 ref.mps > /dev/null', '450.soplex'+RUN_PATH),
+            'gamess': ("416.gamess/exe/gamess"+EXE_SUFIX +'  < h2ocu2+.gradient.config > /dev/null', '416.gamess'+RUN_PATH),
+            'milc': ('433.milc/exe/milc'+EXE_SUFIX +' < su3imp.in > /dev/null', '433.milc'+RUN_PATH),
+            'zeusmp':('434.zeusmp/exe/zeusmp'+EXE_SUFIX +' > /dev/null', '434.zeusmp'+RUN_PATH),
+            'astar':('473.astar/exe/astar'+EXE_SUFIX +' BigLakes2048.cfg > /dev/null', '473.astar'+RUN_PATH),
+            'calculix':('454.calculix/exe/calculix'+EXE_SUFIX +' -i  hyperviscoplastic > /dev/null', '454.calculix'+RUN_PATH),
+            'lbm':('470.lbm/exe/lbm'+EXE_SUFIX +' 3000 reference.dat 0 0 100_100_130_ldc.of > /dev/null', '470.lbm'+RUN_PATH),
+            'bwaves':('410.bwaves/exe/bwaves'+EXE_SUFIX +' > /dev/null', '410.bwaves'+RUN_PATH),
+            'gobmk':('445.gobmk/exe/gobmk'+EXE_SUFIX +' --quiet --mode gtp < nngs.tst > /dev/null', '445.gobmk'+RUN_PATH),
+            'leslie3d': ('437.leslie3d/exe/leslie3d'+EXE_SUFIX +' < leslie3d.in > /dev/null', '437.leslie3d'+RUN_PATH),
+            'bzip2':('401.bzip2/exe/bzip2'+EXE_SUFIX +' input.source 280 > /dev/null', '401.bzip2'+RUN_PATH),
+            'cactusADM':('436.cactusADM/exe/cactusADM'+EXE_SUFIX +' benchADM.par > /dev/null', '436.cactusADM'+RUN_PATH),
+            'mcf':('429.mcf/exe/mcf'+EXE_SUFIX +' inp.in > /dev/null', '429.mcf'+RUN_PATH),
+            'h264ref':('464.h264ref/exe/h264ref'+EXE_SUFIX +' -d foreman_ref_encoder_baseline.cfg > /dev/null', '464.h264ref'+RUN_PATH),
+            'wrf':('481.wrf/exe/wrf'+EXE_SUFIX +' > /dev/null', '481.wrf'+RUN_PATH),
+            'hmmer':('456.hmmer/exe/hmmer'+EXE_SUFIX +' --fixed 0 --mean 500 --num 500000 --sd 350 --seed 0 retro.hmm > /dev/null', '456.hmmer'+RUN_PATH),
+            'namd':('444.namd/exe/namd'+EXE_SUFIX +' --input namd.input --iterations 38 --output /dev/null', '444.namd'+RUN_PATH),
+            'GemsFDTD':('459.GemsFDTD/exe/GemsFDTD'+EXE_SUFIX +' > /dev/null', '459.GemsFDTD'+RUN_PATH),
+            'sjeng':('458.sjeng/exe/sjeng'+EXE_SUFIX +' ref.txt > /dev/null', '458.sjeng'+RUN_PATH),
+            'dealII':('447.dealII/exe/sjeng'+EXE_SUFIX +' 23 > /dev/null', '447.dealII'+RUN_PATH),
+            'omnetpp':('471.omnetpp/exe/omnetpp'+EXE_SUFIX +' omnetpp.ini > /dev/null', '471.omnetpp'+RUN_PATH),
+            'povray': ('453.povray/exe/povray'+EXE_SUFIX +' SPEC-benchmark-ref.ini > /dev/null 2>> /dev/null', '453.povray'+RUN_PATH),
+            'gromacs': ('435.gromacs/exe/gromacs'+EXE_SUFIX +' -silent -deffnm gromacs -nice 0 > /dev/null', '435.gromacs'+RUN_PATH),
+            'libquantum': ('462.libquantum/exe/libquantum'+EXE_SUFIX +' 1397 8 > /dev/null', '462.libquantum'+RUN_PATH),
+            'gcc': ('403.gcc/exe/gcc'+EXE_SUFIX +' 166.i -o 166.s > /dev/null', '403.gcc'+RUN_PATH),
+            'tonto':('465.tonto/exe/tonto'+EXE_SUFIX +' > /dev/null', '465.tonto'+RUN_PATH)}
+
+def get_children(pid):
+    return [int(i) for i in os.popen('ps -o pid --no-headers --ppid '+str(pid)).read().split('\n')[:-1]]
+
+def find_task(ppid):
+    c = get_children(ppid)
+    if c == []:
+        return ppid
+    p = c[0]
+    while c:
+        c = get_children(p)
+        if c:
+            p = c[0]
+    return p
+
+def run_apps(apps):
+    procs = {}
+    task_procs = {}
+    for a in apps:
+
+        os.chdir(SPEC_PATH + cmd_list[a][1])
+        cmd = SPEC_PATH + cmd_list[a][0]
+
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)
+        time.sleep(1)
+        procs[a] = p.pid
+        task_procs[a] = find_task(p.pid)
+
+    return procs, task_procs
+
+
+# running = {}
+# all_ran = {}
+# exec_time = {}
+# ctx_swt = {}
+# f = open('/ramcache/running_threads','w')
+# f.write(str(num_thrs))
+# for a in apps:
+  # p = task_procs[a]
+  # f.write('\t'+str(p))
+  # running[a] = 0
+  # all_ran[a] = 1
+  # exec_time[a] = []
+  # ctx_swt[a] = []
+# f.write('\n')
+# f.close()
+
+#time.sleep(1)
+
+#f = open('/ramcache/running_threads','w')
+# f.write(str(num_thrs))
+# for a in apps:
+  # p = task_procs[a]
+  # f.write('\t'+str(p))
+  # running[a] = 0
+  # all_ran[a] = 1
+  # exec_time[a] = []
+  # ctx_swt[a] = []
+# f.write('\n')
+# f.close()
+
+
+app_list = ['calculix','lbm','hmmer','milc','libquantum','povray','tonto','gobmk',
+'gromacs','namd','astar','cactusADM','soplex','leslie3d','zeusmp','sjeng']
+
+app_list.sort(reverse=True)
+
+#num_run_apps = sys.argv[1:]
+
+procs, task_procs = run_apps(app_list[0:2])
+
+already_run = 2
+
+while True:
+    
+  ret_pid, status, rusage = os.wait3(0)
+
+#  print 'ret_pid', ret_pid
+  app = [k for k, v in procs.iteritems() if v == ret_pid][0]
+  pid = task_procs[app]
+#  print 'pid', pid, 'finished'
+  print 'app', app,'finished'
+  
+  exec_time[app] += [rusage[0] + rusage[1]]
+  
+  already_run += 1
+  
+  if already_run > len(app_list): break
+  
+  new_app = app_list[already_run-1]
+  print 'running', new_app
+  os.chdir(SPEC_PATH+cmd_list[new_app][1])
+  cmd = SPEC_PATH + cmd_list[new_app][0]
+  p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)
+  time.sleep(1)
+  procs[new_app] = p.pid
+  task_procs[new_app] = find_task(p.pid)
+
+
+
